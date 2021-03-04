@@ -2,110 +2,400 @@
 # -*- coding: utf-8 -*-
 
 import os
+import time
 import os.path
-import shutil
 import sys
-from PIL import Image
+import tkinter as tk
+from tkinter import filedialog
+from tkinter import messagebox
+from tkinter import *
+import shutil
+from settings import *
 import threading
-
-SUPPORTED_FORMATS = ('jpg', 'jpeg', 'png')
-
-
-def create_dirs(raw_images, save_dir):
-    for image in raw_images:
-        compress_dir = save_dir + '/' + os.path.dirname(image)
-        if not os.path.isdir(compress_dir):
-            os.makedirs(compress_dir)
+from PIL import Image
 
 
-def get_raw_images(raw_images_dir):
+class MainWindow:
 
-    if not os.path.isdir(raw_images_dir):
-        messagebox.showinfo('Directory Error !',
-                            """Input Folder Does not Exist.
-        Please Check the Directory and Try Again"""
-                            )
+    THIS_FOLDER_G = ''
+    if getattr(sys, 'frozen', False):
+        THIS_FOLDER_G = os.path.dirname(sys.executable)
+    else:
+        THIS_FOLDER_G = os.path.dirname(os.path.realpath(__file__))
 
-    raw_images = []
+    def __init__(self, root):
+        self.root = root
 
-    for (root, directories, files) in os.walk(raw_images_dir):
-        for filename in files:
-            if not filename.startswith('.'):
-                file_type = filename.split('.')[-1].lower()
-                if file_type in SUPPORTED_FORMATS:
-                    filepath = os.path.join(root, filename)
-                    raw_images.append(filepath.replace(raw_images_dir,
-                            ''))
+        # Thread for Compressing the Images.
 
-    return raw_images
+        self.compress = None
+
+        # Thread for Stoping the Compressing thread process.
+
+        self.stop = None
+        self.stopFlag = False
+
+        self._folder_url1 = tk.StringVar()
+        self._folder_url2 = tk.StringVar()
+        self._status = tk.StringVar()
+        self.raw_images_dir = ''
+        self.save_dir = ''
+        self.abs_image_path = ''
+        self.raw_images = []
+        self._status.set('---')
+        self.SUPPORTED_FORMATS = ('jpg', 'jpeg', 'png')
+
+        root.title('Pixxia')
+        root.configure(bg='#eeeeee')
+
+        try:
+            icon_img = tk.Image('photo', file=self.THIS_FOLDER_G
+                                + './files/compresssio.ico')
+            root.call('wm', 'iconphoto', root._w, icon_img)
+        except Exception:
+            pass
+
+        self.menu_bar = tk.Menu(root, bg='#eeeeee', relief=tk.FLAT)
+        self.menu_bar.add_command(label='Help!',
+                                  command=self.show_help_callback)
+        self.menu_bar.add_command(label='About',
+                                  command=self.show_about)
+
+        root.configure(menu=self.menu_bar)
+
+        self.file_entry_label1 = tk.Label(root,
+                text='Enter Input Folder Path:', bg='#eeeeee',
+                anchor=tk.W)
+        self.file_entry_label1.grid(
+            padx=12,
+            pady=(8, 0),
+            ipadx=0,
+            ipady=1,
+            row=0,
+            column=0,
+            columnspan=4,
+            sticky=tk.W + tk.E + tk.N + tk.S,
+            )
+
+        self.file_entry1 = tk.Entry(root,
+                                    textvariable=self._folder_url1,
+                                    bg='#fff', exportselection=0,
+                                    relief=tk.FLAT)
+        self.file_entry1.grid(
+            padx=15,
+            pady=6,
+            ipadx=8,
+            ipady=8,
+            row=1,
+            column=0,
+            columnspan=4,
+            sticky=tk.W + tk.E + tk.N + tk.S,
+            )
+
+        self.select_btn1 = tk.Button(
+            root,
+            text='SELECT INPUT FOLDER',
+            command=self.selectfolder1_callback,
+            width=42,
+            bg='#3498db',
+            fg='#ffffff',
+            bd=2,
+            relief=tk.FLAT,
+            )
+        self.select_btn1.grid(
+            padx=15,
+            pady=8,
+            ipadx=24,
+            ipady=6,
+            row=2,
+            column=0,
+            columnspan=4,
+            sticky=tk.W + tk.E + tk.N + tk.S,
+            )
+
+        self.file_entry_label2 = tk.Label(root,
+                text='Enter Output Folder Path:', bg='#eeeeee',
+                anchor=tk.W)
+        self.file_entry_label2.grid(
+            padx=12,
+            pady=(8, 0),
+            ipadx=0,
+            ipady=1,
+            row=3,
+            column=0,
+            columnspan=4,
+            sticky=tk.W + tk.E + tk.N + tk.S,
+            )
+
+        self.file_entry2 = tk.Entry(root,
+                                    textvariable=self._folder_url2,
+                                    bg='#fff', exportselection=0,
+                                    relief=tk.FLAT)
+        self.file_entry2.grid(
+            padx=15,
+            pady=6,
+            ipadx=8,
+            ipady=8,
+            row=4,
+            column=0,
+            columnspan=4,
+            sticky=tk.W + tk.E + tk.N + tk.S,
+            )
+
+        self.select_btn2 = tk.Button(
+            root,
+            text='SELECT OUTPUT FOLDER',
+            command=self.selectfolder2_callback,
+            width=42,
+            bg='#3498db',
+            fg='#ffffff',
+            bd=2,
+            relief=tk.FLAT,
+            )
+        self.select_btn2.grid(
+            padx=15,
+            pady=8,
+            ipadx=24,
+            ipady=6,
+            row=5,
+            column=0,
+            columnspan=4,
+            sticky=tk.W + tk.E + tk.N + tk.S,
+            )
 
 
-def change_dir(abs_image_path, raw_images_dir, save_dir):
-    custom_dir_path = os.path.dirname(abs_image_path)
-    custom_dir_path = custom_dir_path.split('\\')
-    compressed_custom_dir_path = save_dir + '/' \
-        + '/'.join(custom_dir_path)
-    os.chdir(compressed_custom_dir_path)
+        self.compress_btn = tk.Button(
+            root,
+            text='START COMPRESS',
+            command=self.compress_callback,
+            bg='#27ae60',
+            fg='#ffffff',
+            bd=2,
+            relief=tk.FLAT,
+            )
+        self.compress_btn.grid(
+            padx=15,
+            pady=8,
+            ipadx=24,
+            ipady=6,
+            row=8,
+            column=0,
+            columnspan=2,
+            sticky=tk.W + tk.E + tk.N + tk.S,
+            )
+
+        self.stop_btn = tk.Button(
+            root,
+            text='STOP',
+            command=self.stop_callback,
+            bg='#aaaaaa',
+            fg='#ffffff',
+            bd=2,
+            state='disabled',
+            relief=tk.FLAT,
+            )
+        self.stop_btn.grid(
+            padx=15,
+            pady=8,
+            ipadx=24,
+            ipady=6,
+            row=8,
+            column=2,
+            columnspan=2,
+            sticky=tk.W + tk.E + tk.N + tk.S,
+            )
+
+        self.reset_btn = tk.Button(
+            root,
+            text='CLEAR STATUS',
+            command=self.reset_callback,
+            bg='#717d7e',
+            fg='#ffffff',
+            bd=2,
+            relief=tk.FLAT,
+            )
+        self.reset_btn.grid(
+            padx=15,
+            pady=(4, 12),
+            ipadx=24,
+            ipady=6,
+            row=9,
+            column=0,
+            columnspan=4,
+            sticky=tk.W + tk.E + tk.N + tk.S,
+            )
+
+        self.status_label = tk.Label(
+            root,
+            textvariable=self._status,
+            bg='#eeeeee',
+            anchor=tk.W,
+            justify=tk.LEFT,
+            relief=tk.FLAT,
+            wraplength=350,
+            )
+        self.status_label.grid(
+            padx=12,
+            pady=(0, 12),
+            ipadx=0,
+            ipady=1,
+            row=10,
+            column=0,
+            columnspan=4,
+            sticky=tk.W + tk.E + tk.N + tk.S,
+            )
+
+    def selectfolder1_callback(self):
+        try:
+            name = filedialog.askdirectory()
+            self._folder_url1.set(name)
+        except Exception as e:
+            self._status.set(e)
+            self.status_label.update()
+
+    def selectfolder2_callback(self):
+        try:
+            name = filedialog.askdirectory()
+            self._folder_url2.set(name)
+        except Exception as e:
+            self._status.set(e)
+            self.status_label.update()
+
+    def enable(self):
+
+        self.stop_btn['bg'] = '#aaaaaa'
+        self.stop_btn['state'] = 'disabled'
+        self.compress_btn['state'] = 'normal'
+        self.compress_btn['bg'] = '#27ae60'
+        self.reset_btn['bg'] = '#717d7e'
+        self.reset_btn['state'] = 'normal'
+        self.file_entry1['state'] = 'normal'
+        self.file_entry2['state'] = 'normal'
+        self.select_btn1['state'] = 'normal'
+        self.select_btn2['state'] = 'normal'
+        self.select_btn1['bg'] = '#3498db'
+        self.select_btn2['bg'] = '#3498db'
+
+    def disable(self):
+
+        self.compress_btn['bg'] = '#aaaaaa'
+        self.compress_btn['state'] = 'disabled'
+        self.reset_btn['bg'] = '#aaaaaa'
+        self.reset_btn['state'] = 'disabled'
+        self.stop_btn['bg'] = '#e74c3c'
+        self.stop_btn['state'] = 'normal'
+        self.file_entry1['state'] = 'disabled'
+        self.file_entry2['state'] = 'disabled'
+        self.select_btn1['state'] = 'disabled'
+        self.select_btn2['state'] = 'disabled'
+        self.select_btn1['bg'] = '#aaaaaa'
+        self.select_btn2['bg'] = '#aaaaaa'
+
+    def show_help_callback(self):
+        messagebox.showinfo('Help!',
+                            """1. Click SELECT INPUT FOLDER Button to select the INPUT FOLDER which contains all the Images to be Compressed/Optimized.
+2. Click SELECT OUTPUT FOLDER Button to select the OUTPUT FOLDER which will contain all the the Compressed/Optimized Images. (After Compression)
+3. Hit the COMPRESS Button and the INPUT FOLDER containing Supported Image Formats will be Compressed and saved in the OUTPUT FOLDER.
+4. Click CLEAR Button to reset the input fields and status bar. (If needed)
+
+NOTE: Recommended to keep INPUT and OUTPUT Folder different for your ease to differentiate between Optimized and Unoptimized Images.""")
+
+    def show_about(self):
+        messagebox.showinfo('Pixxia v1.0.0',
+                            """Pixxia is an Image Compression Tool which uses lossy compression to compress JPG/JPEG/PNG images. 
+Created and Managed by Dhruv Panchal.
+https://github.com/dhhruv
+            """)
+
+    def stop_callback(self):
+        if not self.stopFlag:
+            self.stopFlag = True
+            self.stop = threading.Thread(target=self.stop_execute,
+                    name='Stopping_Thread', daemon=True)
+            self.stop.start()
+
+    def stop_execute(self):
+        self.stop_btn['text'] = 'STOPPING...'  # Set button text to stoping.
+        self._status.set('Stopping the Compression. Please Wait...')
+        self.status_label.update()
+
+        while self.stopFlag:
+            time.sleep(1)
+
+        self.stop_btn['text'] = 'STOP'
+        self._status.set('Compression Cancelled!!')
+        self.status_label.update()
+        self.enable()
+        messagebox.showinfo('Pixxia', 'Compression Cancelled!!')
+
+    def compress_callback(self):
+        self.disable()
+        self.compress = threading.Thread(target=self.compress_execute,
+                name='Compression_Thread', daemon=True)
+        self.compress.start()
+
+    def compress_execute(self):
+        try:
+
+            self._status.set('Calculating Raw Images...')
+            self.status_label.update()
+
+            self.raw_images = get_raw_images(self._folder_url1.get())
+            if not self.raw_images:
+                self._status.set('No images found within supported formats!!!'
+                                 )
+                self.status_label.update()
+                messagebox.showinfo('Pixxia',
+                                    'No images found within supported formats. Please check the INPUT Folder and Try Again!!!'
+                                    )
+                self.reset_callback()
+            else:
+                create_dirs(self.raw_images, self._folder_url2.get())
+
+                self._status.set('Compression in Progress....')
+                self.status_label.update()
+                length = len(self.raw_images)
+
+                for (index, image) in enumerate(self.raw_images):
+                    if self.stopFlag:
+                        self.stopFlag = False
+                        return
+
+                    (only_image_path, image_info) = os.path.split(image)
+                    self._status.set('Compressing Image [{}/{}] : {}'.format(index
+                            + 1, length, image_info))
+                    self.status_label.update()
+                    change_dir(image, self._folder_url1.get(),
+                               self._folder_url2.get())
+                    compress_and_save(self._folder_url1.get() + '/'
+                            + image)
+                self._status.set('Compression Completed !!')
+                self.status_label.update()
+                self.stopFlag = False
+                self.enable()
+                messagebox.showinfo('Pixxia',
+                                    'Compression Completed !!')
+        except Exception as e:
+            messagebox.showinfo('UnknownError',
+                                'Something went wrong. Please try again later...'
+                                )
+        self.enable()
+
+    def reset_callback(self):
+        self._folder_url1.set('')
+        self._folder_url2.set('')
+        self._status.set('---')
+        self.stopFlag = False
 
 
-def compress_and_save(abs_image_path):
-
-    (only_image_path, image_info) = os.path.split(abs_image_path)
-
-    index = image_info.rindex('.')
-    (image_name, image_type) = (image_info[:index], image_info[index
-                                + 1:])
-    optimized_filename = '{}_optimized.{}'.format(image_name,
-            image_type)
-
-    im=Image.open(abs_image_path,'r') # Open the image in Read Mode
-    pix_val = list(im.getdata())  # get pixel value in RGB format
-    #print(pix_val[:10])
-    print("Compressing")
-
-    '''a= [x for sets in pix_val for x in sets] #Convert list of tuples into one list 
-    print(a[:30])'''
-
-    myRoundedList =  [round(x,-1) for sets in pix_val for x in sets]  #Round integers to nearest 10
-    if im.mode in("RGBA","p"):
-        b=list(tuple(myRoundedList[i:i+4]) for i in range(0, len(myRoundedList), 4))  #Group list to a tuple of 4 integers
-    elif im.mode in("RGB"):
-        b=list(tuple(myRoundedList[i:i+3]) for i in range(0, len(myRoundedList), 3))   #Group list to a tuple of 3 integers
-    #print(b[:10])
-   
-    '''list_of_pixels = list(b)
-    print(list_of_pixels[:10])'''
-
-    im2 = Image.new(im.mode, im.size) #Create a new image 
-
-    im2.putdata(b) #put image data into the new image 
-    
-    if im.mode in("RGBA","p"):           #save the file 
-        im2.save(optimized_filename,"PNG")
-    elif im.mode in("RGB"):
-        im2.save(optimized_filename,"JPEG")
-      #save the file 
-    im.close()
-    im2.close()
-    '''if not os.path.isfile(optimized_filename):
-        source = tinify.from_file(abs_image_path)
-        source.to_file(optimized_filename)'''
-
-def main():
-    or_folder='Z:\\Modules\\Image Compress\\New\\Pictures'
-    co_folder='Z:\\Modules\\Image Compress\\New\\PicturesCompressed'
-    raw_images = get_raw_images(or_folder)
-    create_dirs(raw_images, co_folder)
-    length = len(raw_images)
-
-    for (index, image) in enumerate(raw_images):
-
-        (only_image_path, image_info) = os.path.split(image)
-        change_dir(image, or_folder, co_folder)
-        compress_and_save(or_folder + '/'
-                + image)
-
-if __name__ == "__main__":
-    t1 = threading.Thread(target=main)
-    t1.start()
-
+bundle_dir = getattr(sys, '_MEIPASS',
+                     os.path.abspath(os.path.dirname(__file__)))
+path_to_ico = os.path.abspath(os.path.join(bundle_dir,
+                              './files/compresssio.ico'))
+ROOT = tk.Tk()
+ROOT.resizable(height=False, width=False)
+folder_path_1 = StringVar()
+folder_path_2 = StringVar()
+MAIN_WINDOW = MainWindow(ROOT)
+ROOT.iconbitmap(path_to_ico)
+ROOT.mainloop()
