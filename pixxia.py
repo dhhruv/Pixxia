@@ -50,7 +50,7 @@ class MainWindow:
 
         try:
             icon_img = tk.Image('photo', file=self.THIS_FOLDER_G
-                                + './files/compresssio.ico')
+                                + './files/pixxia.ico')
             root.call('wm', 'iconphoto', root._w, icon_img)
         except Exception:
             pass
