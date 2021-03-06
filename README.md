@@ -28,12 +28,12 @@ The above script uses lossy compression methods to reduce the document size of y
 
 <p align="center">
 	<h4 align="left" style="margin-top: -4px !important;">Image 1:</h4>
-	<img src="https://user-images.githubusercontent.com/72680045/102686740-9c59b700-420f-11eb-9a83-f88b9e060abb.png">
+	<img src="https://user-images.githubusercontent.com/72680045/110210445-c5f1b880-7eb7-11eb-9a11-b1943089cc07.png">
 </p>
 
 <p align="center">
 	<h4 align="left" style="margin-top: -4px !important;">Image 2:</h4>
-	<img src="https://user-images.githubusercontent.com/72680045/102686743-9d8ae400-420f-11eb-9501-12c42aa4268d.png">
+	<img src="https://user-images.githubusercontent.com/72680045/110210444-c427f500-7eb7-11eb-8dd7-72f73c58f5fe.png">
 </p>
 
 ## Setup (Windows):
@@ -58,7 +58,7 @@ pip install -r requirements.txt
 ```
 
 <p align="center">
-	<img src="https://user-images.githubusercontent.com/72680045/102932031-8d039380-44c5-11eb-8640-3c0dd9e2ae23.PNG">
+	<img src="https://user-images.githubusercontent.com/72680045/110210540-1d902400-7eb8-11eb-85e7-917f006069ec.PNG">
 </p>
 <br>
 
