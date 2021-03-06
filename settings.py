@@ -56,31 +56,23 @@ def compress_and_save(abs_image_path):
     optimized_filename = '{}_optimized.{}'.format(image_name,
             image_type)
 
-    im=Image.open(abs_image_path,'r') # Open the image in Read Mode
-    pix_val = list(im.getdata())  # get pixel value in RGB format
-    #print(pix_val[:10])
+    im=Image.open(abs_image_path,'r') 
+    pix_val = list(im.getdata())  
 
-    '''a= [x for sets in pix_val for x in sets] #Convert list of tuples into one list 
-    print(a[:30])'''
-
-    myRoundedList =  [round(x,-1) for sets in pix_val for x in sets]  #Round integers to nearest 10
+    templs =  [round(x,-1) for sets in pix_val for x in sets]  
     if im.mode in("RGBA","p"):
-        b=list(tuple(myRoundedList[i:i+4]) for i in range(0, len(myRoundedList), 4))  #Group list to a tuple of 4 integers
+        new_pix=list(tuple(templs[i:i+4]) for i in range(0, len(templs), 4))  
     elif im.mode in("RGB"):
-        b=list(tuple(myRoundedList[i:i+3]) for i in range(0, len(myRoundedList), 3))   #Group list to a tuple of 3 integers
-    #print(b[:10])
-   
-    '''list_of_pixels = list(b)
-    print(list_of_pixels[:10])'''
+        new_pix=list(tuple(templs[i:i+3]) for i in range(0, len(templs), 3))  
 
-    im2 = Image.new(im.mode, im.size) #Create a new image 
+    im2 = Image.new(im.mode, im.size)
 
-    im2.putdata(b) #put image data into the new image 
+    im2.putdata(new_pix) 
     
-    if im.mode in("RGBA","p"):           #save the file 
+    if im.mode in("RGBA","p"):         
         im2.save(optimized_filename,"PNG")
     elif im.mode in("RGB"):
         im2.save(optimized_filename,"JPEG")
-      #save the file 
+
     im.close()
     im2.close()
