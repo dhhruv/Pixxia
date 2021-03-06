@@ -36,6 +36,8 @@ The above script uses lossy compression methods to reduce the document size of y
 	<img src="https://user-images.githubusercontent.com/72680045/110210444-c427f500-7eb7-11eb-8dd7-72f73c58f5fe.png">
 </p>
 
+> For Images >= 6 MB you may see a great compression ratio as compared to the images which are smaller in size.
+
 ## Setup (Windows):
 
 1. Install Python
