@@ -13,12 +13,18 @@
     </a>
     <img src="https://img.shields.io/github/downloads/dhhruv/Pixxia/total?color=important">
   </p>
-  <p align="center">
+</p>
+<p align="center">
     <a href="https://github.com/dhhruv/Pixxia">
       <img src="http://ForTheBadge.com/images/badges/made-with-python.svg">
     </a>
   </p>
+<p align="center">   
+	<a href="https://dev.to/dhhruv/pixxia-compress-your-images-in-optimal-quality-for-free-8mi">
+    	<img src="https://img.shields.io/badge/dev.to-0A0A0A?style=for-the-badge&logo=dev.to&logoColor=white">
+    </a>
 </p>
+
 
 # Pixxia:
 
